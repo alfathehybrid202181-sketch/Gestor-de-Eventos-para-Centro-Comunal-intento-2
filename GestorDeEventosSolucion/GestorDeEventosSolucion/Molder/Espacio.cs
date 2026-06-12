@@ -1,6 +1,9 @@
-﻿namespace GestorDeEventosSolucion.Molder
+﻿using System.Security.Cryptography;
+
+namespace GestorDeEventosSolucion.Molder
 {
-    public class Class
+    public class Espacio
     {
+
     }
 }
