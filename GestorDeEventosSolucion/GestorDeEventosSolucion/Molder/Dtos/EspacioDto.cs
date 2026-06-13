@@ -1,11 +1,11 @@
-﻿namespace GestorDeEventosSolucion.Molder
+﻿namespace GestorDeEventosSolucion.Molder.Dtos
 {
-    public class Espacio
+    public class EspacioDto
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
         public int MaxCapacity { get; set; }
-        public bool IsAvailable { get; set; } = true;
+        public bool IsAvailable { get; set; }
     }
 }
