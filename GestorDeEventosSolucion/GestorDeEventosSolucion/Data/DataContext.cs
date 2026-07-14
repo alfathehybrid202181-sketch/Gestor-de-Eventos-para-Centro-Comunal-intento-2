@@ -11,6 +11,9 @@ public class DataContext : DbContext
     public DbSet<Espacio> Espacios { get; set; }
     public DbSet<Evento> Eventos { get; set; }
 
+    public DbSet<Responsable> Responsables { get; set; }
+    public DbSet<Participante> Participantes { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
