@@ -1,10 +1,15 @@
-using GestorDeEventosSolucion.Data;
 using Microsoft.EntityFrameworkCore;
+using GestorDeEventos.Infrastructure.Context;
+using GestorDeEventos.Infrastructure.Interfaces;
+using GestorDeEventos.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<DataContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+builder.Services.AddScoped<IEspacioRepository, EspacioRepository>();
+builder.Services.AddScoped<IEventoRepository, EventoRepository>();
+builder.Services.AddScoped<IParticipanteRepository, ParticipanteRepository>();
+builder.Services.AddScoped<IResponsableRepository, ResponsableRepository>();
 // Add services to the container.
 
 builder.Services.AddControllers();

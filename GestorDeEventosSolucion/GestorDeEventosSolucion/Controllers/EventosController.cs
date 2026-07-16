@@ -1,100 +1,114 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using GestorDeEventosSolucion.Data;
-using GestorDeEventosSolucion.Molder;
-using GestorDeEventosSolucion.Molder.Dtos;
+using GestorDeEventos.Domain.Entities;
+using GestorDeEventos.Infrastructure.Interfaces;
+using GestorDeEventosSolucion.Dtos;
 
-namespace GestorDeEventosSolucion.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-public class EventosController : ControllerBase
+namespace GestorDeEventosSolucion.Controllers
 {
-    private readonly DataContext _context;
-
-    public EventosController(DataContext context)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class EventosController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly IEventoRepository _eventoRepository;
 
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<EventoDto>>> Get()
-    {
-        var eventos = await _context.Eventos.ToListAsync();
-        var dtos = eventos.Select(e => new EventoDto
+        public EventosController(IEventoRepository eventoRepository)
         {
-            Id = e.Id,
-            Name = e.Name,
-            Description = e.Description,
-            Scheduling = e.Scheduling,
-            EspacioId = e.EspacioId
-        });
-        return Ok(dtos);
-    }
+            _eventoRepository = eventoRepository;
+        }
 
-    [HttpGet("{id}")]
-    public async Task<ActionResult<EventoDto>> Get(int id)
-    {
-        var e = await _context.Eventos.FindAsync(id);
-        if (e == null) return NotFound();
-
-        return Ok(new EventoDto
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<EventoDto>>> Get()
         {
-            Id = e.Id,
-            Name = e.Name,
-            Description = e.Description,
-            Scheduling = e.Scheduling,
-            EspacioId = e.EspacioId
-        });
-    }
+            var databaseEventos = await _eventoRepository.GetAllAsync();
 
-    [HttpPost]
-    public async Task<ActionResult<EventoDto>> Post(CreateEventoDto d)
-    {
-        var e = new Evento
+            var dtos = databaseEventos.Select(e => new EventoDto
+            {
+                Id = e.Id,
+                Name = e.Name,
+                Description = e.Description,
+                Scheduling = e.Scheduling,
+                EspacioId = e.EspacioId
+            }).ToList();
+
+            return Ok(dtos);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<EventoDto>> GetById(int id)
         {
-            Name = d.Name,
-            Description = d.Description,
-            Scheduling = d.Scheduling,
-            EspacioId = d.EspacioId
-        };
+            var e = await _eventoRepository.GetByIdAsync(id);
+            if (e == null)
+            {
+                return NotFound();
+            }
 
-        _context.Eventos.Add(e);
-        await _context.SaveChangesAsync();
+            var dto = new EventoDto
+            {
+                Id = e.Id,
+                Name = e.Name,
+                Description = e.Description,
+                Scheduling = e.Scheduling,
+                EspacioId = e.EspacioId
+            };
 
-        return Ok(new EventoDto
+            return Ok(dto);
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<EventoDto>> Post(CreateEventoDto d)
         {
-            Id = e.Id,
-            Name = e.Name,
-            Description = e.Description,
-            Scheduling = e.Scheduling,
-            EspacioId = e.EspacioId
-        });
-    }
+            var e = new Evento
+            {
+                Name = d.Name,
+                Description = d.Description,
+                Scheduling = d.Scheduling,
+                EspacioId = d.EspacioId
+            };
 
-    [HttpPut("{id}")]
-    public async Task<IActionResult> Put(int id, UpdateEventoDto d)
-    {
-        var e = await _context.Eventos.FindAsync(id);
-        if (e == null) return NotFound();
+            await _eventoRepository.AddAsync(e);
 
-        e.Name = d.Name;
-        e.Description = d.Description;
-        e.Scheduling = d.Scheduling;
-        e.EspacioId = d.EspacioId;
+            var resultDto = new EventoDto
+            {
+                Id = e.Id,
+                Name = e.Name,
+                Description = e.Description,
+                Scheduling = e.Scheduling,
+                EspacioId = e.EspacioId
+            };
 
-        await _context.SaveChangesAsync();
-        return NoContent();
-    }
+            return Ok(resultDto);
+        }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var e = await _context.Eventos.FindAsync(id);
-        if (e == null) return NotFound();
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Put(int id, UpdateEventoDto d)
+        {
+            var e = await _eventoRepository.GetByIdAsync(id);
+            if (e == null)
+            {
+                return NotFound();
+            }
 
-        _context.Eventos.Remove(e);
-        await _context.SaveChangesAsync();
-        return NoContent();
+            e.Name = d.Name;
+            e.Description = d.Description;
+            e.Scheduling = d.Scheduling;
+            e.EspacioId = d.EspacioId;
+
+            await _eventoRepository.UpdateAsync(e);
+
+            return NoContent();
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var e = await _eventoRepository.GetByIdAsync(id);
+            if (e == null)
+            {
+                return NotFound();
+            }
+
+            await _eventoRepository.DeleteAsync(id);
+            return NoContent();
+        }
     }
 }

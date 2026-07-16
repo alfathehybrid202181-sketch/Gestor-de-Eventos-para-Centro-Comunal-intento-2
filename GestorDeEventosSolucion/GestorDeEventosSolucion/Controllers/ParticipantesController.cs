@@ -1,8 +1,7 @@
-using GestorDeEventosSolucion.Data;
-using GestorDeEventosSolucion.Molder;
-using GestorDeEventosSolucion.Molder.Dtos;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using GestorDeEventos.Domain.Entities;
+using GestorDeEventos.Infrastructure.Interfaces;
+using GestorDeEventosSolucion.Dtos;
 
 namespace GestorDeEventosSolucion.Controllers
 {
@@ -10,35 +9,39 @@ namespace GestorDeEventosSolucion.Controllers
     [ApiController]
     public class ParticipantesController : ControllerBase
     {
-        private readonly DataContext _context;
+        private readonly IParticipanteRepository _participanteRepository;
 
-        public ParticipantesController(DataContext context)
+        public ParticipantesController(IParticipanteRepository participanteRepository)
         {
-            _context = context;
+            _participanteRepository = participanteRepository;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ParticipanteDto>>> GetParticipantes()
         {
-            var participantes = await _context.Participantes
-                .Select(p => new ParticipanteDto
-                {
-                    Id = p.Id,
-                    FullName = p.FullName,
-                    IdentificationId = p.IdentificationId,
-                    PhoneNumber = p.PhoneNumber,
-                    Email = p.Email
-                }).ToListAsync();
+            var participantes = await _participanteRepository.GetAllAsync();
 
-            return Ok(participantes);
+            var dtos = participantes.Select(p => new ParticipanteDto
+            {
+                Id = p.Id,
+                FullName = p.FullName,
+                IdentificationId = p.IdentificationId,
+                PhoneNumber = p.PhoneNumber,
+                Email = p.Email
+            }).ToList();
+
+            return Ok(dtos);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<ParticipanteDto>> GetParticipante(int id)
         {
-            var participante = await _context.Participantes.FindAsync(id);
+            var participante = await _participanteRepository.GetByIdAsync(id);
 
-            if (participante == null) return NotFound("Participante no encontrado.");
+            if (participante == null)
+            {
+                return NotFound("Participante no encontrado.");
+            }
 
             var participanteDto = new ParticipanteDto
             {
@@ -63,8 +66,7 @@ namespace GestorDeEventosSolucion.Controllers
                 Email = dto.Email
             };
 
-            _context.Participantes.Add(participante);
-            await _context.SaveChangesAsync();
+            await _participanteRepository.AddAsync(participante);
 
             var participanteDto = new ParticipanteDto
             {
@@ -81,16 +83,19 @@ namespace GestorDeEventosSolucion.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutParticipante(int id, UpdateParticipanteDto dto)
         {
-            var participante = await _context.Participantes.FindAsync(id);
+            var participante = await _participanteRepository.GetByIdAsync(id);
 
-            if (participante == null) return NotFound("Participante no encontrado.");
+            if (participante == null)
+            {
+                return NotFound("Participante no encontrado.");
+            }
 
             participante.FullName = dto.FullName;
             participante.IdentificationId = dto.IdentificationId;
             participante.PhoneNumber = dto.PhoneNumber;
             participante.Email = dto.Email;
 
-            await _context.SaveChangesAsync();
+            await _participanteRepository.UpdateAsync(participante);
 
             return NoContent();
         }
@@ -98,12 +103,14 @@ namespace GestorDeEventosSolucion.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteParticipante(int id)
         {
-            var participante = await _context.Participantes.FindAsync(id);
+            var participante = await _participanteRepository.GetByIdAsync(id);
 
-            if (participante == null) return NotFound("Participante no encontrado.");
+            if (participante == null)
+            {
+                return NotFound("Participante no encontrado.");
+            }
 
-            _context.Participantes.Remove(participante);
-            await _context.SaveChangesAsync();
+            await _participanteRepository.DeleteAsync(id);
 
             return NoContent();
         }

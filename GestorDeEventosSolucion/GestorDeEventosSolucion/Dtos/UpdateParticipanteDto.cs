@@ -1,4 +1,4 @@
-namespace GestorDeEventosSolucion.Molder.Dtos
+namespace GestorDeEventosSolucion.Dtos
 {
 	public class UpdateParticipanteDto
 	{

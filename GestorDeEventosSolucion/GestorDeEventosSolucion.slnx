@@ -1,3 +1,5 @@
 <Solution>
+  <Project Path="GestorDeEventos.Domain/GestorDeEventos.Domain.csproj" Id="a47ae2bd-1305-4cbb-a610-d72e84d1c0a1" />
+  <Project Path="GestorDeEventos.Infrastructure/GestorDeEventos.Infrastructure.csproj" Id="9cd1381c-55ea-4e2a-8c21-4501d31cfa12" />
   <Project Path="GestorDeEventosSolucion/GestorDeEventosSolucion.csproj" />
 </Solution>
