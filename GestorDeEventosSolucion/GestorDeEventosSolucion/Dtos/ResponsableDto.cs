@@ -1,7 +1,8 @@
-namespace GestorDeEventosSolucion.Molder.Dtos
+namespace GestorDeEventosSolucion.Dtos
 {
-    public class UpdateResponsableDto
+    public class ResponsableDto
     {
+        public int Id { get; set; }
         public string FullName { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;

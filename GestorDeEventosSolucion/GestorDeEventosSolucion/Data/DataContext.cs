@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using GestorDeEventosSolucion.Molder; 
+using GestorDeEventos.Domain.Entities;
 
 namespace GestorDeEventosSolucion.Data;
 

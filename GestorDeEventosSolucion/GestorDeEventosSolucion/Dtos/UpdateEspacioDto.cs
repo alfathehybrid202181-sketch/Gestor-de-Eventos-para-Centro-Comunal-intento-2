@@ -1,6 +1,6 @@
-﻿namespace GestorDeEventosSolucion.Molder.Dtos
+﻿namespace GestorDeEventosSolucion.Dtos
 {
-    public class CreateEspacioDto
+    public class UpdateEspacioDto
     {
     public string Name { get; set; } = string.Empty;
     public string Location { get; set; } = string.Empty;

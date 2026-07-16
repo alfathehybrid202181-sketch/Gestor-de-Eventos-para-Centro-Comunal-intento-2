@@ -1,8 +1,7 @@
-using GestorDeEventosSolucion.Data;
-using GestorDeEventosSolucion.Molder;
-using GestorDeEventosSolucion.Molder.Dtos;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using GestorDeEventos.Domain.Entities;
+using GestorDeEventos.Infrastructure.Interfaces;
+using GestorDeEventosSolucion.Dtos;
 
 namespace GestorDeEventosSolucion.Controllers
 {
@@ -10,35 +9,39 @@ namespace GestorDeEventosSolucion.Controllers
     [ApiController]
     public class ResponsablesController : ControllerBase
     {
-        private readonly DataContext _context;
+        private readonly IResponsableRepository _responsableRepository;
 
-        public ResponsablesController(DataContext context)
+        public ResponsablesController(IResponsableRepository responsableRepository)
         {
-            _context = context;
+            _responsableRepository = responsableRepository;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ResponsableDto>>> GetResponsables()
         {
-            var responsables = await _context.Responsables
-                .Select(r => new ResponsableDto
-                {
-                    Id = r.Id,
-                    FullName = r.FullName,
-                    Role = r.Role,
-                    PhoneNumber = r.PhoneNumber,
-                    Email = r.Email
-                }).ToListAsync();
+            var responsables = await _responsableRepository.GetAllAsync();
 
-            return Ok(responsables);
+            var dtos = responsables.Select(r => new ResponsableDto
+            {
+                Id = r.Id,
+                FullName = r.FullName,
+                Role = r.Role,
+                PhoneNumber = r.PhoneNumber,
+                Email = r.Email
+            }).ToList();
+
+            return Ok(dtos);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<ResponsableDto>> GetResponsable(int id)
         {
-            var responsable = await _context.Responsables.FindAsync(id);
+            var responsable = await _responsableRepository.GetByIdAsync(id);
 
-            if (responsable == null) return NotFound("Responsable no encontrado.");
+            if (responsable == null)
+            {
+                return NotFound("Responsable no encontrado.");
+            }
 
             var responsableDto = new ResponsableDto
             {
@@ -63,8 +66,7 @@ namespace GestorDeEventosSolucion.Controllers
                 Email = dto.Email
             };
 
-            _context.Responsables.Add(responsable);
-            await _context.SaveChangesAsync();
+            await _responsableRepository.AddAsync(responsable);
 
             var responsableDto = new ResponsableDto
             {
@@ -81,16 +83,19 @@ namespace GestorDeEventosSolucion.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutResponsable(int id, UpdateResponsableDto dto)
         {
-            var responsable = await _context.Responsables.FindAsync(id);
+            var responsable = await _responsableRepository.GetByIdAsync(id);
 
-            if (responsable == null) return NotFound("Responsable no encontrado.");
+            if (responsable == null)
+            {
+                return NotFound("Responsable no encontrado.");
+            }
 
             responsable.FullName = dto.FullName;
             responsable.Role = dto.Role;
             responsable.PhoneNumber = dto.PhoneNumber;
             responsable.Email = dto.Email;
 
-            await _context.SaveChangesAsync();
+            await _responsableRepository.UpdateAsync(responsable);
 
             return NoContent();
         }
@@ -98,12 +103,14 @@ namespace GestorDeEventosSolucion.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteResponsable(int id)
         {
-            var responsable = await _context.Responsables.FindAsync(id);
+            var responsable = await _responsableRepository.GetByIdAsync(id);
 
-            if (responsable == null) return NotFound("Responsable no encontrado.");
+            if (responsable == null)
+            {
+                return NotFound("Responsable no encontrado.");
+            }
 
-            _context.Responsables.Remove(responsable);
-            await _context.SaveChangesAsync();
+            await _responsableRepository.DeleteAsync(id);
 
             return NoContent();
         }
