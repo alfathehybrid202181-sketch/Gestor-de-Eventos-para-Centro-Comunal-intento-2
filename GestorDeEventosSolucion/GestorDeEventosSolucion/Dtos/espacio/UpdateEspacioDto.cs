@@ -1,4 +1,4 @@
-﻿namespace GestorDeEventosSolucion.Dtos
+﻿namespace GestorDeEventosSolucion.Dtos.espacio
 {
     public class UpdateEspacioDto
     {
