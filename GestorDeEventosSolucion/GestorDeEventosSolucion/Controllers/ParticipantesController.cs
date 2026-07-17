@@ -1,101 +1,59 @@
 using Microsoft.AspNetCore.Mvc;
-using GestorDeEventos.Domain.Entities;
-using GestorDeEventos.Infrastructure.Interfaces;
-using GestorDeEventosSolucion.Dtos;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using GestorDeEventos.Application.Contract;
+using GestorDeEventos.Application.Dtos.Participante;
 
 namespace GestorDeEventosSolucion.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class ParticipantesController : ControllerBase
     {
-        private readonly IParticipanteRepository _participanteRepository;
+        private readonly IParticipanteService _participanteService;
 
-        public ParticipantesController(IParticipanteRepository participanteRepository)
+        public ParticipantesController(IParticipanteService participanteService)
         {
-            _participanteRepository = participanteRepository;
+            _participanteService = participanteService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ParticipanteDto>>> GetParticipantes()
         {
-            var participantes = await _participanteRepository.GetAllAsync();
-
-            var dtos = participantes.Select(p => new ParticipanteDto
-            {
-                Id = p.Id,
-                FullName = p.FullName,
-                IdentificationId = p.IdentificationId,
-                PhoneNumber = p.PhoneNumber,
-                Email = p.Email
-            }).ToList();
-
+            var dtos = await _participanteService.ObtenerTodosLosParticipantesAsync();
             return Ok(dtos);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<ParticipanteDto>> GetParticipante(int id)
         {
-            var participante = await _participanteRepository.GetByIdAsync(id);
-
-            if (participante == null)
+            var dto = await _participanteService.ObtenerParticipantePorIdAsync(id);
+            if (dto == null)
             {
                 return NotFound("Participante no encontrado.");
             }
 
-            var participanteDto = new ParticipanteDto
-            {
-                Id = participante.Id,
-                FullName = participante.FullName,
-                IdentificationId = participante.IdentificationId,
-                PhoneNumber = participante.PhoneNumber,
-                Email = participante.Email
-            };
-
-            return Ok(participanteDto);
+            return Ok(dto);
         }
 
         [HttpPost]
-        public async Task<ActionResult<ParticipanteDto>> PostParticipante(CreateParticipanteDto dto)
+        public async Task<ActionResult<ParticipanteDto>> PostParticipante(ParticipanteDto dto)
         {
-            var participante = new Participante
-            {
-                FullName = dto.FullName,
-                IdentificationId = dto.IdentificationId,
-                PhoneNumber = dto.PhoneNumber,
-                Email = dto.Email
-            };
-
-            await _participanteRepository.AddAsync(participante);
-
-            var participanteDto = new ParticipanteDto
-            {
-                Id = participante.Id,
-                FullName = participante.FullName,
-                IdentificationId = participante.IdentificationId,
-                PhoneNumber = participante.PhoneNumber,
-                Email = participante.Email
-            };
-
-            return CreatedAtAction(nameof(GetParticipante), new { id = participante.Id }, participanteDto);
+            var resultDto = await _participanteService.CrearParticipanteAsync(dto);
+            return CreatedAtAction(nameof(GetParticipante), new { id = resultDto.Id }, resultDto);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutParticipante(int id, UpdateParticipanteDto dto)
+        public async Task<IActionResult> PutParticipante(int id, ParticipanteDto dto)
         {
-            var participante = await _participanteRepository.GetByIdAsync(id);
-
-            if (participante == null)
+            var participanteExistente = await _participanteService.ObtenerParticipantePorIdAsync(id);
+            if (participanteExistente == null)
             {
                 return NotFound("Participante no encontrado.");
             }
 
-            participante.FullName = dto.FullName;
-            participante.IdentificationId = dto.IdentificationId;
-            participante.PhoneNumber = dto.PhoneNumber;
-            participante.Email = dto.Email;
-
-            await _participanteRepository.UpdateAsync(participante);
+            dto.Id = id;
+            await _participanteService.ActualizarParticipanteAsync(dto);
 
             return NoContent();
         }
@@ -103,15 +61,13 @@ namespace GestorDeEventosSolucion.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteParticipante(int id)
         {
-            var participante = await _participanteRepository.GetByIdAsync(id);
-
-            if (participante == null)
+            var participanteExistente = await _participanteService.ObtenerParticipantePorIdAsync(id);
+            if (participanteExistente == null)
             {
                 return NotFound("Participante no encontrado.");
             }
 
-            await _participanteRepository.DeleteAsync(id);
-
+            await _participanteService.EliminarParticipanteAsync(id);
             return NoContent();
         }
     }

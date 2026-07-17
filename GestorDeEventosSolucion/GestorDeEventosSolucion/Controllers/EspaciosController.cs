@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using GestorDeEventos.Domain.Entities;
-using GestorDeEventos.Infrastructure.Interfaces;
-using GestorDeEventosSolucion.Dtos;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using GestorDeEventos.Application.Contract;
+using GestorDeEventos.Application.Dtos.Espacio;
 
 namespace GestorDeEventosSolucion.Controllers
 {
@@ -9,91 +10,50 @@ namespace GestorDeEventosSolucion.Controllers
     [Route("api/[controller]")]
     public class EspaciosController : ControllerBase
     {
-        private readonly IEspacioRepository _espacioRepository;
+        private readonly IEspacioService _espacioService;
 
-        public EspaciosController(IEspacioRepository espacioRepository)
+        public EspaciosController(IEspacioService espacioService)
         {
-            _espacioRepository = espacioRepository;
+            _espacioService = espacioService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<EspacioDto>>> Get()
         {
-            var espacios = await _espacioRepository.GetAllAsync();
-
-            var dtos = espacios.Select(e => new EspacioDto
-            {
-                Id = e.Id,
-                Name = e.Name,
-                Location = e.Location,
-                MaxCapacity = e.MaxCapacity,
-                IsAvailable = e.IsAvailable
-            }).ToList();
-
+            var dtos = await _espacioService.ObtenerTodosLosEspaciosAsync();
             return Ok(dtos);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<EspacioDto>> GetById(int id)
         {
-            var espacio = await _espacioRepository.GetByIdAsync(id);
-            if (espacio == null)
+            var dto = await _espacioService.ObtenerEspacioPorIdAsync(id);
+            if (dto == null)
             {
                 return NotFound();
             }
-
-            var dto = new EspacioDto
-            {
-                Id = espacio.Id,
-                Name = espacio.Name,
-                Location = espacio.Location,
-                MaxCapacity = espacio.MaxCapacity,
-                IsAvailable = espacio.IsAvailable
-            };
 
             return Ok(dto);
         }
 
         [HttpPost]
-        public async Task<ActionResult<EspacioDto>> Post(CreateEspacioDto d)
+        public async Task<ActionResult<EspacioDto>> Post(EspacioDto d)
         {
-            var nuevoEspacio = new Espacio
-            {
-                Name = d.Name,
-                Location = d.Location,
-                MaxCapacity = d.MaxCapacity,
-                IsAvailable = d.IsAvailable
-            };
-
-            await _espacioRepository.AddAsync(nuevoEspacio);
-
-            var resultDto = new EspacioDto
-            {
-                Id = nuevoEspacio.Id,
-                Name = nuevoEspacio.Name,
-                Location = nuevoEspacio.Location,
-                MaxCapacity = nuevoEspacio.MaxCapacity,
-                IsAvailable = nuevoEspacio.IsAvailable
-            };
-
+            var resultDto = await _espacioService.CrearEspacioAsync(d);
             return Ok(resultDto);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, UpdateEspacioDto d)
+        public async Task<IActionResult> Put(int id, EspacioDto d)
         {
-            var espacioExistente = await _espacioRepository.GetByIdAsync(id);
+            var espacioExistente = await _espacioService.ObtenerEspacioPorIdAsync(id);
             if (espacioExistente == null)
             {
                 return NotFound();
             }
 
-            espacioExistente.Name = d.Name;
-            espacioExistente.Location = d.Location;
-            espacioExistente.MaxCapacity = d.MaxCapacity;
-            espacioExistente.IsAvailable = d.IsAvailable;
-
-            await _espacioRepository.UpdateAsync(espacioExistente);
+            d.Id = id;
+            await _espacioService.ActualizarEspacioAsync(d);
 
             return NoContent();
         }
@@ -101,13 +61,13 @@ namespace GestorDeEventosSolucion.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var espacio = await _espacioRepository.GetByIdAsync(id);
-            if (espacio == null)
+            var espacioExistente = await _espacioService.ObtenerEspacioPorIdAsync(id);
+            if (espacioExistente == null)
             {
                 return NotFound();
             }
 
-            await _espacioRepository.DeleteAsync(id);
+            await _espacioService.EliminarEspacioAsync(id);
             return NoContent();
         }
     }

@@ -1,7 +1,8 @@
-namespace GestorDeEventosSolucion.Dtos
+﻿namespace GestorDeEventos.Application.Dtos.Participante
 {
-    public class CreateParticipanteDto
+    public class ParticipanteDto
     {
+        public int Id { get; set; }
         public string FullName { get; set; } = string.Empty;
         public string IdentificationId { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;

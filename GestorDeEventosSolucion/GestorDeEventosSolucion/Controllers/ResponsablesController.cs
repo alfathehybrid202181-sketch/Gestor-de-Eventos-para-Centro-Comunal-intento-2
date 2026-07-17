@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using GestorDeEventos.Domain.Entities;
 using GestorDeEventos.Infrastructure.Interfaces;
-using GestorDeEventosSolucion.Dtos;
+using GestorDeEventosSolucion.Dtos.Responsable;
 
 namespace GestorDeEventosSolucion.Controllers
 {

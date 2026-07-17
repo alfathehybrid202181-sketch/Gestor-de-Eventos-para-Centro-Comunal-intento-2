@@ -1,4 +1,4 @@
-﻿namespace GestorDeEventosSolucion.Dtos
+﻿namespace GestorDeEventosSolucion.Dtos.Evento
 {
     public class EventoDto
     {

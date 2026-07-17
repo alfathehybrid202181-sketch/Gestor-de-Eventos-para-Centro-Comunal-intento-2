@@ -1,6 +1,6 @@
-﻿namespace GestorDeEventosSolucion.Dtos
+﻿namespace GestorDeEventosSolucion.Dtos.Evento
 {
-    public class CreateEventoDto
+    public class UpdateEventoDto
     {
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;

@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\GestorDeEventos.Application\GestorDeEventos.Application.csproj" />
     <ProjectReference Include="..\GestorDeEventos.Domain\GestorDeEventos.Domain.csproj" />
     <ProjectReference Include="..\GestorDeEventos.Infrastructure\GestorDeEventos.Infrastructure.csproj" />
   </ItemGroup>

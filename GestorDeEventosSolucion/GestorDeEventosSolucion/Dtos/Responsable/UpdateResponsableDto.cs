@@ -1,6 +1,6 @@
-namespace GestorDeEventosSolucion.Dtos
+namespace GestorDeEventosSolucion.Dtos.Responsable
 {
-    public class CreateResponsableDto
+    public class UpdateResponsableDto
     {
         public string FullName { get; set; } = string.Empty;
         public string Role { get; set; } = string.Empty;
