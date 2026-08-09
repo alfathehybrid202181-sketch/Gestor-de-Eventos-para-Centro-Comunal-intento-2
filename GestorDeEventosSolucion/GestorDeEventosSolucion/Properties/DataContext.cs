@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using GestorDeEventos.Domain.Entities;
 
-namespace GestorDeEventosSolucion.Data;
+namespace GestorDeEventos.API.Properties;
 
 public class DataContext : DbContext
 {

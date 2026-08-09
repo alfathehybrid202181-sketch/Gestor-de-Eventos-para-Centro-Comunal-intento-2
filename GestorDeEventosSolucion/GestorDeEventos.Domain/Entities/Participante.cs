@@ -8,6 +8,7 @@ namespace GestorDeEventos.Domain.Entities
         public string IdentificationId { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-        public List<Evento> Eventos { get; set; } = new();
+        public int EventoId { get; set; }
+        public Evento? Evento { get; set; }
     }
 }

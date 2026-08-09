@@ -20,14 +20,14 @@ namespace GestorDeEventos.Application.Services
         public async Task<IEnumerable<ParticipanteDto>> ObtenerTodosLosParticipantesAsync()
         {
             var participantes = await _participanteRepository.GetAllAsync();
-
             return participantes.Select(p => new ParticipanteDto
             {
                 Id = p.Id,
                 FullName = p.FullName,
                 IdentificationId = p.IdentificationId,
                 PhoneNumber = p.PhoneNumber,
-                Email = p.Email
+                Email = p.Email,
+                EventoId = p.EventoId
             });
         }
 
@@ -42,37 +42,40 @@ namespace GestorDeEventos.Application.Services
                 FullName = p.FullName,
                 IdentificationId = p.IdentificationId,
                 PhoneNumber = p.PhoneNumber,
-                Email = p.Email
+                Email = p.Email,
+                EventoId = p.EventoId
             };
         }
 
-        public async Task<ParticipanteDto> CrearParticipanteAsync(ParticipanteDto participanteDto)
+        public async Task<ParticipanteDto> CrearParticipanteAsync(ParticipanteDto dto)
         {
-            var nuevoParticipante = new Participante
+            var entidad = new Participante
             {
-                FullName = participanteDto.FullName,
-                IdentificationId = participanteDto.IdentificationId,
-                PhoneNumber = participanteDto.PhoneNumber,
-                Email = participanteDto.Email
+                FullName = dto.FullName,
+                IdentificationId = dto.IdentificationId,
+                PhoneNumber = dto.PhoneNumber,
+                Email = dto.Email,
+                EventoId = dto.EventoId
             };
 
-            await _participanteRepository.AddAsync(nuevoParticipante);
+            await _participanteRepository.AddAsync(entidad);
 
-            participanteDto.Id = nuevoParticipante.Id;
-            return participanteDto;
+            dto.Id = entidad.Id;
+            return dto;
         }
 
-        public async Task ActualizarParticipanteAsync(ParticipanteDto participanteDto)
+        public async Task ActualizarParticipanteAsync(ParticipanteDto dto)
         {
-            var participanteExistente = await _participanteRepository.GetByIdAsync(participanteDto.Id);
-            if (participanteExistente != null)
+            var entidad = await _participanteRepository.GetByIdAsync(dto.Id);
+            if (entidad != null)
             {
-                participanteExistente.FullName = participanteDto.FullName;
-                participanteExistente.IdentificationId = participanteDto.IdentificationId;
-                participanteExistente.PhoneNumber = participanteDto.PhoneNumber;
-                participanteExistente.Email = participanteDto.Email;
+                entidad.FullName = dto.FullName;
+                entidad.IdentificationId = dto.IdentificationId;
+                entidad.PhoneNumber = dto.PhoneNumber;
+                entidad.Email = dto.Email;
+                entidad.EventoId = dto.EventoId;
 
-                await _participanteRepository.UpdateAsync(participanteExistente);
+                await _participanteRepository.UpdateAsync(entidad);
             }
         }
 
