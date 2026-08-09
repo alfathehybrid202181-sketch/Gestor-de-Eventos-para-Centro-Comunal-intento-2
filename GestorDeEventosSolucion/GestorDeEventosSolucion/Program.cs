@@ -18,6 +18,15 @@ builder.Services.AddScoped<IEspacioService, EspacioService>();
 builder.Services.AddScoped<IEventoService, EventoService>();
 builder.Services.AddScoped<IParticipanteService, ParticipanteService>();
 builder.Services.AddScoped<IResponsableService, ResponsableService>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -29,7 +38,13 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 app.UseSwagger();
 app.UseSwaggerUI();
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<DataContext>();
+    _ = dbContext.Database.CanConnect();
+}
 app.Run();

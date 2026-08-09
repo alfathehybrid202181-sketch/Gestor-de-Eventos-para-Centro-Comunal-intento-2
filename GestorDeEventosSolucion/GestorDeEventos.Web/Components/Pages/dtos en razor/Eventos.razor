@@ -1,0 +1,341 @@
+﻿@page "/eventos"
+@rendermode InteractiveServer
+@using GestorDeEventos.Application.Dtos.Evento
+@using GestorDeEventos.Application.Dtos.Participante
+@inject HttpClient Http
+
+<div class="container my-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Gestión de Eventos</h2>
+        <button class="btn btn-primary" @onclick="AbrirModalCrear">
+            <i class="bi bi-plus-circle me-1"></i> Nuevo Evento
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @mensajeError
+            <button type="button" class="btn-close" @onclick="() => mensajeError = string.Empty"></button>
+        </div>
+    }
+
+    @if (cargando)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2 text-muted">Cargando eventos...</p>
+        </div>
+    }
+    else if (listaEventos == null || !listaEventos.Any())
+    {
+        <div class="alert alert-info">
+            No hay eventos registrados actualmente.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle shadow-sm">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Fecha y Hora</th>
+                        <th>Invitados</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var evento in listaEventos)
+                    {
+                        var misParticipantes = listaParticipantes
+                            .Where(p => p.EventoId == evento.Id)
+                            .ToList();
+
+                        <tr>
+                            <td class="fw-bold">@evento.Name</td>
+                            <td>@evento.Description</td>
+                            <td>@evento.Scheduling.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                <button class="btn btn-sm btn-info text-white" @onclick="() => VerParticipantesModal(evento.Name, misParticipantes)">
+                                    <i class="bi bi-people-fill me-1"></i> Ver (@misParticipantes.Count)
+                                </button>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-warning me-1" @onclick="() => AbrirModalEditar(evento)">
+                                    <i class="bi bi-pencil-square me-1"></i> Editar
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => EliminarEvento(evento.Id)">
+                                    <i class="bi bi-trash-fill me-1"></i> Eliminar
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (mostrarModalFormulario)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5); z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content shadow-lg border-0">
+                <div class="modal-header bg-warning text-dark fw-bold">
+                    <h5 class="modal-title fw-bold">
+                        @(eventoFormulario.Id == 0 ? "Registrar Nuevo Evento" : "Editar Evento")
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CerrarModalFormulario"></button>
+                </div>
+                <EditForm Model="eventoFormulario" OnValidSubmit="GuardarEvento">
+                    <DataAnnotationsValidator />
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Nombre del Evento</label>
+                            <InputText class="form-control" @bind-Value="eventoFormulario.Name" placeholder="Ej: Boda Millonaria" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Descripción</label>
+                            <InputTextArea class="form-control" @bind-Value="eventoFormulario.Description" placeholder="Descripción breve del evento..." rows="2" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Fecha y Hora Programada</label>
+                            <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="eventoFormulario.Scheduling" required />
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Espacio (ID - Nombre)</label>
+                                <InputSelect class="form-select" @bind-Value="eventoFormulario.EspacioId" required>
+                                    <option value="0">-- Seleccione Espacio --</option>
+                                    @foreach (var esp in listaEspacios)
+                                    {
+                                        <option value="@esp.Id">ID: @esp.Id - @esp.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Responsable (ID - Nombre)</label>
+                                <InputSelect class="form-select" @bind-Value="eventoFormulario.ResponsableId" required>
+                                    <option value="0">-- Seleccione Responsable --</option>
+                                    @foreach (var resp in listaResponsables)
+                                    {
+                                        <option value="@resp.Id">ID: @resp.Id - @(string.IsNullOrEmpty(resp.FullName) ? resp.Name : resp.FullName)</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary px-4" @onclick="CerrarModalFormulario">Cancelar</button>
+                        <button type="submit" class="btn btn-warning px-4 fw-bold">
+                            @(eventoFormulario.Id == 0 ? "Guardar Evento" : "Actualizar Evento")
+                        </button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@if (mostrarModalParticipantes)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5); z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg border-0">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-people me-2"></i>Invitados: @tituloEventoSeleccionado
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CerrarModalParticipantes"></button>
+                </div>
+                <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
+                    @if (participantesDelEvento.Any())
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var p in participantesDelEvento)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold text-dark">@p.FullName</div>
+                                        <small class="text-muted d-block">@p.Email | @p.PhoneNumber</small>
+                                    </div>
+                                    <span class="badge bg-secondary">ID: @p.IdentificationId</span>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <div class="text-center text-muted py-4">
+                            <p class="mb-0">No hay invitados registrados para este evento.</p>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CerrarModalParticipantes">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<EventoDto> listaEventos = new();
+    private List<ParticipanteDto> listaParticipantes = new();
+    private List<EspacioLookup> listaEspacios = new();
+    private List<ResponsableLookup> listaResponsables = new();
+
+    private EventoDto eventoFormulario = new();
+
+    private bool cargando = true;
+    private bool mostrarModalFormulario = false;
+    private bool mostrarModalParticipantes = false;
+    private string tituloEventoSeleccionado = string.Empty;
+    private string mensajeError = string.Empty;
+    private List<ParticipanteDto> participantesDelEvento = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
+        cargando = true;
+        mensajeError = string.Empty;
+        try
+        {
+            listaEventos = await Http.GetFromJsonAsync<List<EventoDto>>("api/Eventos") ?? new();
+            listaParticipantes = await Http.GetFromJsonAsync<List<ParticipanteDto>>("api/Participantes") ?? new();
+
+            try { listaEspacios = await Http.GetFromJsonAsync<List<EspacioLookup>>("api/Espacios") ?? new(); } catch { }
+            try { listaResponsables = await Http.GetFromJsonAsync<List<ResponsableLookup>>("api/Responsables") ?? new(); } catch { }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Error al cargar datos desde la API: {ex.Message}";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void AbrirModalCrear()
+    {
+        eventoFormulario = new()
+        {
+            Id = 0,
+            Scheduling = DateTime.Now,
+            EspacioId = listaEspacios.FirstOrDefault()?.Id ?? 1,
+            ResponsableId = listaResponsables.FirstOrDefault()?.Id ?? 1
+        };
+        mostrarModalFormulario = true;
+    }
+
+    private void AbrirModalEditar(EventoDto evento)
+    {
+        eventoFormulario = new EventoDto
+        {
+            Id = evento.Id,
+            Name = evento.Name,
+            Description = evento.Description,
+            Scheduling = evento.Scheduling,
+            EspacioId = evento.EspacioId,
+            ResponsableId = evento.ResponsableId
+        };
+        mostrarModalFormulario = true;
+    }
+
+    private void CerrarModalFormulario()
+    {
+        mostrarModalFormulario = false;
+    }
+
+    private async Task GuardarEvento()
+    {
+        try
+        {
+            mensajeError = string.Empty;
+            HttpResponseMessage response;
+
+            if (eventoFormulario.Id == 0)
+            {
+                response = await Http.PostAsJsonAsync("api/Eventos", eventoFormulario);
+            }
+            else
+            {
+                response = await Http.PutAsJsonAsync($"api/Eventos/{eventoFormulario.Id}", eventoFormulario);
+            }
+
+            if (response.IsSuccessStatusCode)
+            {
+                CerrarModalFormulario();
+                await CargarDatos();
+            }
+            else
+            {
+                var det = await response.Content.ReadAsStringAsync();
+                mensajeError = $"Error en la API ({response.StatusCode}): {det}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Excepción al guardar: {ex.Message}";
+        }
+    }
+
+    private void VerParticipantesModal(string tituloEvento, List<ParticipanteDto> participantes)
+    {
+        tituloEventoSeleccionado = tituloEvento;
+        participantesDelEvento = participantes;
+        mostrarModalParticipantes = true;
+    }
+
+    private void CerrarModalParticipantes()
+    {
+        mostrarModalParticipantes = false;
+        participantesDelEvento.Clear();
+        tituloEventoSeleccionado = string.Empty;
+    }
+
+    private async Task EliminarEvento(int id)
+    {
+        try
+        {
+            mensajeError = string.Empty;
+            var response = await Http.DeleteAsync($"api/Eventos/{id}");
+            if (response.IsSuccessStatusCode)
+            {
+                await CargarDatos();
+            }
+            else
+            {
+                var det = await response.Content.ReadAsStringAsync();
+                mensajeError = $"Error al eliminar ({response.StatusCode}): {det}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensajeError = $"Excepción al eliminar: {ex.Message}";
+        }
+    }
+
+    // Clases auxiliares locales para evitar errores de propiedades inexistentes en DTOs externos
+    public class EspacioLookup
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public class ResponsableLookup
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+    }
+}

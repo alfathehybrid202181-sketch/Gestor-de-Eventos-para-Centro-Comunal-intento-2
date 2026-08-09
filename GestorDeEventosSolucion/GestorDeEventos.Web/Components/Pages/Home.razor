@@ -1,0 +1,209 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@inject HttpClient Http
+@using GestorDeEventos.Application.Dtos.Evento
+@using GestorDeEventos.Application.Dtos.Participante
+@using GestorDeEventos.Application.Dtos.Espacio
+@using GestorDeEventos.Application.Dtos.Responsable
+
+<PageTitle>Inicio - Gestor de Eventos</PageTitle>
+
+<div class="container-fluid py-2">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h1 class="fw-bold">Panel Principal</h1>
+            <p class="text-muted">Bienvenido al sistema de gestión de eventos del centro comunal.</p>
+        </div>
+    </div>
+
+    <!-- TARJETAS DE MÉTRICAS CLAVE (3 MÉTTRICAS PRINCIPALES) -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-primary text-white p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50 text-uppercase fw-bold mb-1">Espacios Disponibles</h6>
+                        <h2 class="mb-0 fw-bold">@(espacios?.Count ?? 0)</h2>
+                    </div>
+                    <i class="bi bi-building fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-success text-white p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50 text-uppercase fw-bold mb-1">Eventos Activos</h6>
+                        <h2 class="mb-0 fw-bold">@(eventosActivos?.Count ?? 0)</h2>
+                    </div>
+                    <i class="bi bi-calendar-check fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-info text-white p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50 text-uppercase fw-bold mb-1">Invitados Confirmados</h6>
+                        <h2 class="mb-0 fw-bold">@(invitados?.Count ?? 0)</h2>
+                    </div>
+                    <i class="bi bi-people fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- COLUMNA IZQUIERDA: ACCESOS Y LISTA DE RESPONSABLES -->
+        <div class="col-lg-7">
+            <!-- ACCESOS RÁPIDOS -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white fw-bold py-3">
+                    Accesos Rápidos
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <a href="eventos" class="btn btn-outline-success w-100 p-3 text-start shadow-sm text-decoration-none">
+                                <div class="fw-bold fs-5">+ Crear Evento</div>
+                                <small class="text-muted">Programa un evento en un espacio disponible.</small>
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="invitados" class="btn btn-outline-info w-100 p-3 text-start shadow-sm text-decoration-none">
+                                <div class="fw-bold fs-5">+ Registrar Invitado</div>
+                                <small class="text-muted">Añade participantes a los eventos programados.</small>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LISTADO TIPO CUADRO: RESPONSABLES Y ROLES -->
+            <div class="card shadow-sm border-0 border-top border-4 border-warning">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="card-title mb-0 fw-bold">Equipo / Responsables</h5>
+                    <a href="responsables" class="btn btn-sm btn-outline-warning text-dark fw-bold">Ver todos</a>
+                </div>
+                <div class="card-body p-0">
+                    @if (responsables == null)
+                    {
+                        <div class="p-3 text-center">
+                            <div class="spinner-border spinner-border-sm text-warning" role="status"></div>
+                        </div>
+                    }
+                    else if (!responsables.Any())
+                    {
+                        <div class="p-3 text-muted text-center">
+                            No hay responsables registrados.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Rol / Cargo</th>
+                                        <th>Teléfono</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var resp in responsables.Take(5))
+                                    {
+                                        <tr>
+                                            <td class="fw-bold">@resp.FullName</td>
+                                            <td>
+                                                <span class="badge bg-warning text-dark">
+                                                    @(string.IsNullOrWhiteSpace(resp.Role) ? "Sin Rol" : resp.Role)
+                                                </span>
+                                            </td>
+                                            <td class="text-muted">@resp.PhoneNumber</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: WIDGET PRÓXIMOS EVENTOS -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 border-top border-4 border-success">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="card-title mb-0 fw-bold">Próximos Eventos</h5>
+                    <span class="badge bg-success">Activos</span>
+                </div>
+                <div class="card-body p-0">
+                    @if (eventosActivos == null)
+                    {
+                        <div class="p-3 text-center">
+                            <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+                        </div>
+                    }
+                    else if (!eventosActivos.Any())
+                    {
+                        <div class="p-3 text-muted text-center">
+                            No hay eventos activos o próximos.
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var ev in eventosActivos.Take(5))
+                            {
+                                <li class="list-group-item p-3">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <span class="fw-bold text-dark">@ev.Name</span>
+                                        <small class="badge bg-light text-dark border">
+                                            @ev.Scheduling.ToString("dd/MM/yyyy")
+                                        </small>
+                                    </div>
+                                    <small class="text-muted d-block">
+                                        🕒 @ev.Scheduling.ToString("hh:mm tt")
+                                    </small>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<EspacioDto>? espacios;
+    private List<EventoDto>? eventos;
+    private List<EventoDto>? eventosActivos;
+    private List<ResponsableDto>? responsables;
+    private List<ParticipanteDto>? invitados;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            espacios = await Http.GetFromJsonAsync<List<EspacioDto>>("api/Espacios");
+            responsables = await Http.GetFromJsonAsync<List<ResponsableDto>>("api/Responsables");
+            invitados = await Http.GetFromJsonAsync<List<ParticipanteDto>>("api/Participantes");
+
+            eventos = await Http.GetFromJsonAsync<List<EventoDto>>("api/Eventos");
+            if (eventos != null)
+            {
+                eventosActivos = eventos
+                    .Where(e => e.Scheduling >= DateTime.Now.Date)
+                    .OrderBy(e => e.Scheduling)
+                    .ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar datos en Home: {ex.Message}");
+        }
+    }
+}
