@@ -7,117 +7,112 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3>Gestión de Espacios</h3>
-    <button class="btn btn-primary" @onclick="AbrirFormularioNuevo">
-        <i class="bi bi-plus-lg"></i> Nuevo Espacio
+    <button class="btn btn-primary fw-bold" @onclick="AbrirFormularioNuevo">
+        + Nuevo Espacio
     </button>
 </div>
 
 @if (mostrarFormulario)
 {
     <div class="card mb-4 shadow-sm border-primary">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">@(espacioEdicion.Id == 0 ? "Nuevo Espacio" : "Editar Espacio")</h5>
+        <div class="card-header bg-primary text-white fw-bold">
+            @(itemEdicion.Id == 0 ? "Nuevo Espacio" : "Editar Espacio")
         </div>
         <div class="card-body">
-            <EditForm Model="espacioEdicion" OnValidSubmit="GuardarEspacio">
+            <EditForm Model="itemEdicion" OnValidSubmit="Guardar">
                 <DataAnnotationsValidator />
-
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Nombre del Espacio</label>
-                        <InputText @bind-Value="espacioEdicion.Name" class="form-control" placeholder="Ej: Salón Principal" />
+                        <InputText @bind-Value="itemEdicion.Name" class="form-control" placeholder="Ej: Salón A, Jardín Central" />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Ubicación</label>
-                        <InputText @bind-Value="espacioEdicion.Location" class="form-control" placeholder="Ej: Nivel 1" />
+                        <InputText @bind-Value="itemEdicion.Location" class="form-control" placeholder="Ej: Edificio Principal" />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Capacidad Máxima</label>
-                        <InputNumber @bind-Value="espacioEdicion.MaxCapacity" class="form-control" />
+                        <InputNumber @bind-Value="itemEdicion.MaxCapacity" class="form-control" placeholder="Ej: 100" />
                     </div>
                     <div class="col-md-6 d-flex align-items-end">
-                        <div class="form-check form-switch mb-2">
-                            <InputCheckbox @bind-Value="espacioEdicion.IsAvailable" class="form-check-input" id="chkDisponible" />
-                            <label class="form-check-label fw-bold" for="chkDisponible">Disponible para reservas</label>
+                        <div class="form-check mb-2">
+                            <InputCheckbox @bind-Value="itemEdicion.IsAvailable" class="form-check-input" id="chkDisponible" />
+                            <label class="form-check-label fw-bold" for="chkDisponible">Disponible</label>
                         </div>
                     </div>
                 </div>
 
+                @if (!string.IsNullOrEmpty(mensajeError))
+                {
+                    <div class="alert alert-danger mt-3 mb-0">@mensajeError</div>
+                }
+
                 <div class="mt-3 text-end">
                     <button type="button" class="btn btn-secondary me-2" @onclick="CerrarFormulario">Cancelar</button>
-                    <button type="submit" class="btn btn-success">Guardar</button>
+                    <button type="submit" class="btn btn-primary fw-bold">Guardar</button>
                 </div>
             </EditForm>
         </div>
     </div>
 }
 
-@if (espacios == null)
+@if (lista == null)
 {
-    <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Cargando...</span>
-    </div>
+    <div class="spinner-border text-primary" role="status"></div>
 }
-else if (!espacios.Any())
+else if (!lista.Any())
 {
     <div class="alert alert-info">No hay espacios registrados actualmente.</div>
 }
 else
 {
-    <table class="table table-striped table-hover shadow-sm align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Ubicación</th>
-                <th>Capacidad Máx.</th>
-                <th>Estado</th>
-                <th class="text-center">Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var espacio in espacios)
-            {
-                <tr>
-                    <td>@espacio.Id</td>
-                    <td>@espacio.Name</td>
-                    <td>@espacio.Location</td>
-                    <td>@espacio.MaxCapacity personas</td>
-                    <td>
-                        @if (espacio.IsAvailable)
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        @foreach (var item in lista)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0">
+                    <img src="@ObtenerImagenEspacio(item.Name)"
+                         class="card-img-top"
+                         style="height: 180px; object-fit: cover;"
+                         alt="@item.Name" />
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold text-primary mb-2">@item.Name</h5>
+                        <p class="card-text text-muted mb-1">
+                            Capacidad: <strong>@item.MaxCapacity</strong> personas
+                        </p>
+                        @if (!string.IsNullOrEmpty(item.Location))
                         {
-                            <span class="badge bg-success">Disponible</span>
+                            <p class="card-text small text-secondary mb-0">
+                                Ubicación: @item.Location
+                            </p>
                         }
-                        else
-                        {
-                            <span class="badge bg-danger">No Disponible</span>
-                        }
-                    </td>
-                    <td class="text-center">
-                        <button class="btn btn-sm btn-outline-warning me-1" @onclick="() => AbrirFormularioEditar(espacio)">Editar</button>
-                        <button class="btn btn-sm btn-outline-danger" @onclick="() => EliminarEspacio(espacio.Id)">Eliminar</button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                    </div>
+                    <div class="card-footer bg-white border-0 pt-0 d-flex justify-content-end gap-1">
+                        <button class="btn btn-sm btn-outline-warning" @onclick="() => AbrirFormularioEditar(item)">Editar</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(item.Id)">Eliminar</button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 }
 
 @code {
-    private List<EspacioDto>? espacios;
-    private EspacioDto espacioEdicion = new();
+    private List<EspacioDto>? lista;
+    private EspacioDto itemEdicion = new();
     private bool mostrarFormulario = false;
+    private string mensajeError = "";
 
     protected override async Task OnInitializedAsync()
     {
-        await CargarEspacios();
+        await Cargar();
     }
 
-    private async Task CargarEspacios()
+    private async Task Cargar()
     {
         try
         {
-            espacios = await Http.GetFromJsonAsync<List<EspacioDto>>("api/Espacios");
+            lista = await Http.GetFromJsonAsync<List<EspacioDto>>("api/Espacios");
         }
         catch (Exception ex)
         {
@@ -125,51 +120,73 @@ else
         }
     }
 
+    private string ObtenerImagenEspacio(string nombre)
+    {
+        var txt = (nombre ?? "").ToLower();
+        if (txt.Contains("playa") || txt.Contains("mar")) return "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&q=80";
+        if (txt.Contains("patio") || txt.Contains("jardin") || txt.Contains("terraza")) return "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=400&q=80";
+        if (txt.Contains("salon") || txt.Contains("auditorio")) return "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=400&q=80";
+        if (txt.Contains("boda") || txt.Contains("fiesta")) return "https://images.unsplash.com/photo-1519741497674-611481863552?w=400&q=80";
+        return "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&q=80";
+    }
+
     private void AbrirFormularioNuevo()
     {
-        espacioEdicion = new EspacioDto { IsAvailable = true, MaxCapacity = 10 };
+        itemEdicion = new EspacioDto { IsAvailable = true };
+        mensajeError = "";
         mostrarFormulario = true;
     }
 
-    private void AbrirFormularioEditar(EspacioDto espacio)
+    private void AbrirFormularioEditar(EspacioDto item)
     {
-        espacioEdicion = new EspacioDto
+        itemEdicion = new EspacioDto
         {
-            Id = espacio.Id,
-            Name = espacio.Name,
-            Location = espacio.Location,
-            MaxCapacity = espacio.MaxCapacity,
-            IsAvailable = espacio.IsAvailable
+            Id = item.Id,
+            Name = item.Name,
+            Location = item.Location,
+            MaxCapacity = item.MaxCapacity,
+            IsAvailable = item.IsAvailable
         };
+        mensajeError = "";
         mostrarFormulario = true;
     }
 
-    private void CerrarFormulario()
-    {
-        mostrarFormulario = false;
-    }
+    private void CerrarFormulario() => mostrarFormulario = false;
 
-    private async Task GuardarEspacio()
+    private async Task Guardar()
     {
-        if (espacioEdicion.Id == 0)
+        mensajeError = "";
+        HttpResponseMessage res;
+
+        if (itemEdicion.Id == 0)
         {
-            await Http.PostAsJsonAsync("api/Espacios", espacioEdicion);
+            res = await Http.PostAsJsonAsync("api/Espacios", itemEdicion);
         }
         else
         {
-            await Http.PutAsJsonAsync($"api/Espacios/{espacioEdicion.Id}", espacioEdicion);
+            res = await Http.PutAsJsonAsync($"api/Espacios/{itemEdicion.Id}", itemEdicion);
         }
 
-        mostrarFormulario = false;
-        await CargarEspacios();
+        if (res.IsSuccessStatusCode)
+        {
+            mostrarFormulario = false;
+            await Cargar();
+        }
+        else
+        {
+            var errorContent = await res.Content.ReadAsStringAsync();
+            mensajeError = !string.IsNullOrWhiteSpace(errorContent)
+                ? errorContent
+                : "No se pudo guardar el registro.";
+        }
     }
 
-    private async Task EliminarEspacio(int id)
+    private async Task Eliminar(int id)
     {
-        var respuesta = await Http.DeleteAsync($"api/Espacios/{id}");
-        if (respuesta.IsSuccessStatusCode)
+        var res = await Http.DeleteAsync($"api/Espacios/{id}");
+        if (res.IsSuccessStatusCode)
         {
-            await CargarEspacios();
+            await Cargar();
         }
     }
 }

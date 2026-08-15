@@ -44,6 +44,8 @@
                         <th>Nombre</th>
                         <th>Descripción</th>
                         <th>Fecha y Hora</th>
+                        <th>Espacio</th>
+                        <th>Responsable</th>
                         <th>Invitados</th>
                         <th class="text-center">Acciones</th>
                     </tr>
@@ -59,6 +61,8 @@
                             <td class="fw-bold">@evento.Name</td>
                             <td>@evento.Description</td>
                             <td>@evento.Scheduling.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@ObtenerNombreEspacio(evento.EspacioId)</td>
+                            <td>@ObtenerNombreResponsable(evento.ResponsableId)</td>
                             <td>
                                 <button class="btn btn-sm btn-info text-white" @onclick="() => VerParticipantesModal(evento.Name, misParticipantes)">
                                     <i class="bi bi-people-fill me-1"></i> Ver (@misParticipantes.Count)
@@ -113,17 +117,21 @@
                                     <option value="0">-- Seleccione Espacio --</option>
                                     @foreach (var esp in listaEspacios)
                                     {
-                                        <option value="@esp.Id">ID: @esp.Id - @esp.Name</option>
+                                        <option value="@esp.Id">
+                                            ID: @esp.Id - @esp.Name @(!esp.IsAvailable ? " (No disponible)" : "")
+                                        </option>
                                     }
                                 </InputSelect>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Responsable (ID - Nombre)</label>
+                                <label class="form-label fw-bold">Responsable (ID - Nombre - Cargo)</label>
                                 <InputSelect class="form-select" @bind-Value="eventoFormulario.ResponsableId" required>
                                     <option value="0">-- Seleccione Responsable --</option>
                                     @foreach (var resp in listaResponsables)
                                     {
-                                        <option value="@resp.Id">ID: @resp.Id - @(string.IsNullOrEmpty(resp.FullName) ? resp.Name : resp.FullName)</option>
+                                        var nombre = string.IsNullOrEmpty(resp.FullName) ? resp.Name : resp.FullName;
+                                        var cargo = !string.IsNullOrWhiteSpace(resp.Role) ? $" ({resp.Role})" : "";
+                                        <option value="@resp.Id">ID: @resp.Id - @nombre@cargo</option>
                                     }
                                 </InputSelect>
                             </div>
@@ -161,9 +169,13 @@
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                     <div>
                                         <div class="fw-bold text-dark">@p.FullName</div>
-                                        <small class="text-muted d-block">@p.Email | @p.PhoneNumber</small>
+                                        <small class="text-muted d-block">
+                                            @ObtenerContactoParticipante(p)
+                                        </small>
                                     </div>
-                                    <span class="badge bg-secondary">ID: @p.IdentificationId</span>
+                                    <span class="badge bg-secondary">
+                                        Cédula: @(string.IsNullOrWhiteSpace(p.IdentificationId) ? "S/N" : p.IdentificationId)
+                                    </span>
                                 </li>
                             }
                         </ul>
@@ -225,14 +237,41 @@
         }
     }
 
+    private string ObtenerNombreEspacio(int espacioId)
+    {
+        var esp = listaEspacios.FirstOrDefault(e => e.Id == espacioId);
+        return esp != null ? esp.Name : $"ID: {espacioId}";
+    }
+
+    private string ObtenerNombreResponsable(int responsableId)
+    {
+        var resp = listaResponsables.FirstOrDefault(r => r.Id == responsableId);
+        if (resp == null) return $"ID: {responsableId}";
+        var nombre = string.IsNullOrEmpty(resp.FullName) ? resp.Name : resp.FullName;
+        return !string.IsNullOrWhiteSpace(resp.Role) ? $"{nombre} ({resp.Role})" : nombre;
+    }
+
+    private string ObtenerContactoParticipante(ParticipanteDto p)
+    {
+        var datos = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(p.Email))
+            datos.Add(p.Email);
+
+        if (!string.IsNullOrWhiteSpace(p.PhoneNumber))
+            datos.Add(p.PhoneNumber);
+
+        return datos.Any() ? string.Join(" | ", datos) : "Sin contacto";
+    }
+
     private void AbrirModalCrear()
     {
         eventoFormulario = new()
         {
             Id = 0,
             Scheduling = DateTime.Now,
-            EspacioId = listaEspacios.FirstOrDefault()?.Id ?? 1,
-            ResponsableId = listaResponsables.FirstOrDefault()?.Id ?? 1
+            EspacioId = listaEspacios.FirstOrDefault()?.Id ?? 0,
+            ResponsableId = listaResponsables.FirstOrDefault()?.Id ?? 0
         };
         mostrarModalFormulario = true;
     }
@@ -261,6 +300,13 @@
         try
         {
             mensajeError = string.Empty;
+
+            if (eventoFormulario.EspacioId == 0 || eventoFormulario.ResponsableId == 0)
+            {
+                mensajeError = "Por favor selecciona un espacio y un responsable válidos.";
+                return;
+            }
+
             HttpResponseMessage response;
 
             if (eventoFormulario.Id == 0)
@@ -329,6 +375,7 @@
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
+        public bool IsAvailable { get; set; } = true;
     }
 
     public class ResponsableLookup
@@ -336,5 +383,6 @@
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
     }
 }
