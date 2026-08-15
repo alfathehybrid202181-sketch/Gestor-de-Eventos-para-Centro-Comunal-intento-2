@@ -102,7 +102,13 @@ else
             {
                 <tr>
                     <td>@item.Id</td>
-                    <td>@item.FullName</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="https://ui-avatars.com/api/?name=@Uri.EscapeDataString(item.FullName ?? "")&background=random&color=fff&bold=true&size=128"
+                                 class="rounded-circle shadow-sm" width="38" height="38" alt="Avatar" />
+                            <span class="fw-bold">@item.FullName</span>
+                        </div>
+                    </td>
                     <td>@item.IdentificationId</td>
                     <td>@item.PhoneNumber</td>
                     <td>@item.Email</td>
@@ -184,7 +190,6 @@ else
 
     private void CerrarFormulario() => mostrarFormulario = false;
 
-  
     private void OnCedulaInput(ChangeEventArgs e)
     {
         var raw = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).ToArray());
@@ -197,7 +202,8 @@ else
         else
             itemEdicion.IdentificationId = raw;
     }
-  private void OnTelefonoInput(ChangeEventArgs e)
+
+    private void OnTelefonoInput(ChangeEventArgs e)
     {
         var raw = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).ToArray());
         if (raw.Length > 10) raw = raw.Substring(0, 10);

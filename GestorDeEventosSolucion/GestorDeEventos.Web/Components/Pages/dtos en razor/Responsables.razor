@@ -2,7 +2,6 @@
 @rendermode InteractiveServer
 @inject HttpClient Http
 @using Microsoft.AspNetCore.Components.Forms
-@using GestorDeEventos.Application.Dtos.Responsable
 
 <PageTitle>Gestión de Responsables</PageTitle>
 
@@ -29,18 +28,19 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Rol / Cargo</label>
-                        <InputText @bind-Value="itemEdicion.Role" class="form-control" placeholder="Ej: Coordinador de Logística" />
+                        <InputText @bind-Value="itemEdicion.Role" class="form-control" placeholder="Ej: Gerente, Director, Limpiador" />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Teléfono</label>
-                        <input type="text" class="form-control" placeholder="809-000-0000"
-                               value="@itemEdicion.PhoneNumber"
-                               @oninput="OnTelefonoInput"
-                               maxlength="12" />
+                        <InputText @bind-Value="itemEdicion.PhoneNumber" class="form-control" placeholder="809-000-0000" />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Correo Electrónico</label>
                         <InputText @bind-Value="itemEdicion.Email" class="form-control" placeholder="correo@ejemplo.com" />
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">URL de la Foto de Perfil</label>
+                        <InputText @bind-Value="itemEdicion.PhotoUrl" class="form-control" placeholder="https://ejemplo.com/foto.jpg (Opcional)" />
                     </div>
                 </div>
 
@@ -71,12 +71,13 @@ else
     <table class="table table-striped table-hover shadow-sm align-middle">
         <thead class="table-dark">
             <tr>
-                <th>ID</th>
+                <th style="width: 80px;">ID</th>
+                <th style="width: 70px;">Foto</th>
                 <th>Nombre Completo</th>
                 <th>Rol / Cargo</th>
                 <th>Teléfono</th>
                 <th>Email</th>
-                <th class="text-center">Acciones</th>
+                <th class="text-center" style="width: 160px;">Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -84,12 +85,22 @@ else
             {
                 <tr>
                     <td>@item.Id</td>
-                    <td>@item.FullName</td>
-                    <td><span class="badge bg-secondary">@item.Role</span></td>
+                    <td>
+                        <img src="@ObtenerFoto(item)"
+                             class="rounded-circle border shadow-sm"
+                             style="width: 40px; height: 40px; object-fit: cover;"
+                             alt="@item.FullName" />
+                    </td>
+                    <td class="fw-bold">@item.FullName</td>
+                    <td>
+                        <span class="badge bg-secondary text-lowercase px-3 py-2 rounded-pill">
+                            @(string.IsNullOrWhiteSpace(item.Role) ? "sin rol" : item.Role)
+                        </span>
+                    </td>
                     <td>@item.PhoneNumber</td>
                     <td>@item.Email</td>
                     <td class="text-center">
-                        <button class="btn btn-sm btn-outline-warning me-1 text-dark" @onclick="() => AbrirFormularioEditar(item)">Editar</button>
+                        <button class="btn btn-sm btn-outline-warning me-1" @onclick="() => AbrirFormularioEditar(item)">Editar</button>
                         <button class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(item.Id)">Eliminar</button>
                     </td>
                 </tr>
@@ -103,6 +114,16 @@ else
     private ResponsableDto itemEdicion = new();
     private bool mostrarFormulario = false;
     private string mensajeError = "";
+
+    public class ResponsableDto
+    {
+        public int Id { get; set; }
+        public string FullName { get; set; } = "";
+        public string Role { get; set; } = "";
+        public string PhoneNumber { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string PhotoUrl { get; set; } = "";
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -121,6 +142,17 @@ else
         }
     }
 
+    private string ObtenerFoto(ResponsableDto item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.PhotoUrl))
+        {
+            return item.PhotoUrl;
+        }
+
+        var nombre = !string.IsNullOrWhiteSpace(item.FullName) ? item.FullName : "Responsable";
+        return $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(nombre)}&background=random&color=fff";
+    }
+
     private void AbrirFormularioNuevo()
     {
         itemEdicion = new ResponsableDto();
@@ -136,7 +168,8 @@ else
             FullName = item.FullName,
             Role = item.Role,
             PhoneNumber = item.PhoneNumber,
-            Email = item.Email
+            Email = item.Email,
+            PhotoUrl = item.PhotoUrl
         };
         mensajeError = "";
         mostrarFormulario = true;
@@ -144,69 +177,40 @@ else
 
     private void CerrarFormulario() => mostrarFormulario = false;
 
-    private void OnTelefonoInput(ChangeEventArgs e)
-    {
-        var raw = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).ToArray());
-        if (raw.Length > 10) raw = raw.Substring(0, 10);
-
-        if (raw.Length > 6)
-            itemEdicion.PhoneNumber = $"{raw.Substring(0, 3)}-{raw.Substring(3, 3)}-{raw.Substring(6)}";
-        else if (raw.Length > 3)
-            itemEdicion.PhoneNumber = $"{raw.Substring(0, 3)}-{raw.Substring(3)}";
-        else
-            itemEdicion.PhoneNumber = raw;
-    }
-
     private async Task Guardar()
     {
         mensajeError = "";
+        HttpResponseMessage res;
 
-        try
+        if (itemEdicion.Id == 0)
         {
-            HttpResponseMessage res;
-
-            if (itemEdicion.Id == 0)
-            {
-                res = await Http.PostAsJsonAsync("api/Responsables", itemEdicion);
-            }
-            else
-            {
-                res = await Http.PutAsJsonAsync($"api/Responsables/{itemEdicion.Id}", itemEdicion);
-            }
-
-            if (res.IsSuccessStatusCode)
-            {
-                mostrarFormulario = false;
-                await Cargar();
-            }
-            else
-            {
-                var errorBody = await res.Content.ReadAsStringAsync();
-                mensajeError = !string.IsNullOrWhiteSpace(errorBody)
-                    ? errorBody
-                    : "No se pudo guardar el responsable.";
-            }
+            res = await Http.PostAsJsonAsync("api/Responsables", itemEdicion);
         }
-        catch (Exception ex)
+        else
         {
-            Console.WriteLine($"Error al guardar responsable: {ex.Message}");
-            mensajeError = "Ocurrió un error inesperado al guardar.";
+            res = await Http.PutAsJsonAsync($"api/Responsables/{itemEdicion.Id}", itemEdicion);
+        }
+
+        if (res.IsSuccessStatusCode)
+        {
+            mostrarFormulario = false;
+            await Cargar();
+        }
+        else
+        {
+            var errorContent = await res.Content.ReadAsStringAsync();
+            mensajeError = !string.IsNullOrWhiteSpace(errorContent)
+                ? errorContent
+                : "No se pudo guardar el registro.";
         }
     }
 
     private async Task Eliminar(int id)
     {
-        try
+        var res = await Http.DeleteAsync($"api/Responsables/{id}");
+        if (res.IsSuccessStatusCode)
         {
-            var res = await Http.DeleteAsync($"api/Responsables/{id}");
-            if (res.IsSuccessStatusCode)
-            {
-                await Cargar();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error al eliminar responsable: {ex.Message}");
+            await Cargar();
         }
     }
 }
